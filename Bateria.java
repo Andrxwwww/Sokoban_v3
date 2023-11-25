@@ -18,9 +18,5 @@ public class Bateria extends GameElement{
         return 1;
     }
 
-    @Override
-    public boolean isFloor() {
-		return false;
-	}
 
 }

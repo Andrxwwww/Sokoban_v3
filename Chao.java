@@ -17,9 +17,4 @@ public class Chao extends GameElement {
         return 0;
     }
 
-    @Override
-    public boolean isFloor() {
-		return true;
-	}
-
 }

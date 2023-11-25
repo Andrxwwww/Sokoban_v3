@@ -15,12 +15,7 @@ public class Caixote extends GameElement{
 
 	@Override
 	public int getLayer() {
-		return 2;
-	}
-
-	@Override
-	public boolean isFloor() {
-		return false;
+		return 3;
 	}
 
 }

@@ -16,10 +16,5 @@ public class Vazio extends GameElement {
     public int getLayer() {
         return 0;
     }
-
-    @Override
-    public boolean isFloor() {
-		return false;
-	}
     
 }

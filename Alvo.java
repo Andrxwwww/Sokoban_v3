@@ -1,7 +1,9 @@
 package pt.iscte.poo.sokobanstarter;
 import pt.iscte.poo.utils.Point2D;
 
-public class Alvo extends GameElement {
+public class Alvo extends GameElement implements Interaction {
+
+    private boolean BoxOnTarget = false;
 
     public Alvo(Point2D position) {
         super(position);
@@ -17,9 +19,17 @@ public class Alvo extends GameElement {
         return 1;
     }
 
+    public boolean isBoxOnTarget() {
+        return BoxOnTarget;
+    }
+
     @Override
-    public boolean isFloor() {
-		return false;
-	}
+    public void interactWith(GameElement ge) {
+        if (ge instanceof Caixote) {
+            this.BoxOnTarget = true;
+        } else {
+            this.BoxOnTarget = false;
+        }
+    }
 
 }

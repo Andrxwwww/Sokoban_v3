@@ -33,12 +33,7 @@ public class Empilhadora extends GameElement{
 
 	@Override
 	public int getLayer() {
-		return 3;
-	}
-
-	@Override
-    public boolean isFloor() {
-		return false;
+		return 4;
 	}
 
 	public boolean hasHammer() {
@@ -79,17 +74,24 @@ public class Empilhadora extends GameElement{
 			break;
 		}
 	}
-	
-	// Move a empilhadora para a direcao dada, se estiver dentro dos limites
-	public void driveTo(Direction direction) {
-		Point2D newPosition = getPosition().plus(direction.asVector());
-		if (newPosition.getX()>=0 && newPosition.getX()<10 && newPosition.getY()>=0 && newPosition.getY()<10 ){
-			setPosition(newPosition);
+
+	public boolean PosChecker(Point2D position) {
+		if (position.getX()>=0 && position.getX()<10 && position.getY()>=0 && position.getY()<10 ){
 			Battery--;
 			if( Battery == 0 ) {
 				GameEngine.getInstance().infoBox("Click SPACE for restart ", "You ran out of battery :(");
 				GameEngine.getInstance().restartGame(FIRST_LEVEL);
 			}
+			return true;
+		}
+		return false;
+	}
+	
+	// Move a empilhadora para a direcao dada, se estiver dentro dos limites
+	public void driveTo(Direction direction) {
+		Point2D newPosition = getPosition().plus(direction.asVector());
+		if (PosChecker(newPosition)){
+			setPosition(newPosition);
 		}
 	}
 
@@ -120,5 +122,4 @@ public class Empilhadora extends GameElement{
 			}
 		}
 	}
-	
 }

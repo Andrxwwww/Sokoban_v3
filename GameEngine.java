@@ -15,24 +15,8 @@ import pt.iscte.poo.observer.Observer;
 import pt.iscte.poo.utils.Direction;
 import pt.iscte.poo.utils.Point2D;
 
-// Note que esta classe e' um exemplo - nao pretende ser o inicio do projeto, 
-// embora tambem possa ser usada para isso.
-//
-// No seu projeto e' suposto haver metodos diferentes.
-// 
-// As coisas que comuns com o projeto, e que se pretendem ilustrar aqui, sao:
-// - GameEngine implementa Observer - para  ter o metodo update(...)  
-// - Configurar a janela do interface grafico (GUI):
-//        + definir as dimensoes
-//        + registar o objeto GameEngine ativo como observador da GUI
-//        + lancar a GUI
-// - O metodo update(...) e' invocado automaticamente sempre que se carrega numa tecla
-//
-// Tudo o mais podera' ser diferente!
-
 public class GameEngine implements Observer {
 
-	// Dimensoes da grelha de jogo
 	public static final int GRID_HEIGHT = 10;
 	public static final int GRID_WIDTH = 10;
 
@@ -41,18 +25,16 @@ public class GameEngine implements Observer {
 	private List<GameElement> gameElementsList; // Lista de GameElements
 	private Empilhadora bobcat; // Referencia para a empilhadora
 	private int level_num; // Numero do nivel a carregar
-	private int numberOfTargetsWithBoxes; // Numero de alvos com caixas
-	private int numberOfTargets; // Numero de alvos
+	public int numberOfTargetsWithBoxes; // Numero de alvos com caixas
+	public int numberOfTargets; // Numero de alvos
 	private int moves; // Numero de movimentos da empilhadora
 
-	private final int FIRST_LEVEL = 5;
+	public final int FIRST_LEVEL = 5;
 
-	// Construtor - neste exemplo apenas inicializa uma lista de ImageTiles
 	private GameEngine() {
 		gameElementsList = new ArrayList<>();
 	}
 
-	// Implementacao do singleton para o GameEngine
 	public static GameEngine getInstance() {
 		if (INSTANCE == null)
 			return INSTANCE = new GameEngine();
@@ -67,12 +49,7 @@ public class GameEngine implements Observer {
 		return this.gameElementsList;
 	}
 
-	// Inicio
 	public void start() {
-
-		// Setup inicial da janela que faz a interface com o utilizador
-		// algumas coisas poderiam ser feitas no main, mas estes passos tem sempre que
-		// ser feitos!
 
 		gui = ImageMatrixGUI.getInstance(); // 1. obter instancia ativa de ImageMatrixGUI
 		gui.setSize(GRID_HEIGHT, GRID_WIDTH); // 2. configurar as dimensoes
@@ -88,28 +65,30 @@ public class GameEngine implements Observer {
 		sendImagesToGUI(); // enviar as imagens para a GUI
 	}
 
-	// O metodo update() e' invocado automaticamente sempre que o utilizador carrega
-	// numa tecla
-	// no argumento do metodo e' passada uma referencia para o objeto observado
-	// (neste caso a GUI)
 	@Override
 	public void update(Observed source) {
 		int key = gui.keyPressed(); // obtem o codigo da tecla pressionada
 
 		otherKeyInteractions(key); 
-		
+		gui.update();
 		if (bobcat != null && Direction.isDirection(key)) {
 			bobcatKeyMechanics(key);
 			bobcat.pickUpBattery();
 			bobcat.pickUpHammer();
 			levelIncrementer();
 		}
+	}
 
-		gui.update(); // redesenha a lista de ImageTiles na GUI, tendo em conta as novas posicoes dos objetos
+	public GameElement getGameElementAtPosition(Point2D position) {
+		for (GameElement gameElement : gameElementsList) {
+			if (gameElement.getPosition().equals(position)) {
+				return gameElement;
+			}
+		}
+		return null;
 	}
 
 	// --- FUNCTIONS FOR KEYS ---
-	// outras funcoes das keys
 	public void otherKeyInteractions(int key) {
 		if (key == KeyEvent.VK_SPACE) {
 			restartGame(FIRST_LEVEL);
@@ -120,7 +99,6 @@ public class GameEngine implements Observer {
 		JOptionPane.showMessageDialog(null, infoMessage, titleBar, javax.swing.JOptionPane.INFORMATION_MESSAGE);
 	}
 
-	//---- GAME MECHANICS ----
 	private void levelIncrementer() {
 		if (numberOfTargetsWithBoxes == numberOfTargets) {
 			this.level_num++;
@@ -187,20 +165,20 @@ public class GameEngine implements Observer {
 		} else {
 			gameElementsList.add(gameElement);
 		}
-	}
+	} 
 
 	private void bobcatKeyMechanics(int key) {
 
 		if (bobcatCollisionsChecker()) {
 			bobcat.move(key);
 			bobcat.driveTo(Direction.directionFor(key));
+			bobcat.pickUpBattery();
+			bobcat.pickUpHammer();
 			moves++;
 			gui.setStatusMessage("Sokoban" + " - Level " + level_num + " - " + "Battery: " + bobcat.getBattery() + " - " + "Moves: " + moves);
 			//System.out.println(bobcat.getBattery()); // debug para ver a bateria se estácorreta
 			System.out.println( "Numero total de Targets: " + numberOfTargets); // debug para ver o numero de alvos
 			System.out.println( "Numero de Caixotes nos alvos: " + numberOfTargetsWithBoxes); // debug para ver o numero de alvos com caixotes
-		} else {
-			bobcat.move(key);
 		}
 	}
 
@@ -210,32 +188,31 @@ public class GameEngine implements Observer {
 	private boolean bobcatCollisionsChecker() {
 		for (GameElement ge : gameElementsList) {
 			if (bobcat.nextPosition(gui.keyPressed()).equals(ge.getPosition())) {
-
 				if (ge instanceof Caixote || ge instanceof Palete) {
-
 					// verifica se o caixote ou a palete podem mover
 					if (collidableCollisionChecker(ge)) {
-
 						// verifica se esse caixote está num alvo
+
+						// TODO: meter na classe Caixote ou palete	
 						if (isMovableOnTarget("Alvo", "Caixote")){
 							numberOfTargetsWithBoxes++;
 						} else if (numberOfTargetsWithBoxes > 0 && numberOfTargetsWithBoxes <= numberOfTargets 
-							&& collidableCollisionChecker(ge) && isSomethingAbove(ge.getPosition(), "Alvo")){ // se o caixote sair do alvo
+							&& isSomethingAbove(ge.getPosition(), "Alvo")){ // se o caixote sair do alvo
 							numberOfTargetsWithBoxes--;
 						}
-
+						
 						ge.setPosition(ge.getPosition().plus(Direction.directionFor(gui.keyPressed()).asVector()));
 						bobcat.addBattery(-1);
 						return true;
 					} else {
 						return false; // se o caixote ou a palete nao mover entao , a empilhadora nao se move tambem
 					}
-				} else if (ge instanceof Buraco){
-					infoBox("Press SPACE for restart", "You Lost :(");
-					restartGame(FIRST_LEVEL);
+				} else if (ge instanceof Buraco){                   
+					((Buraco)ge).interactWith(bobcat);
 					return false;
 
 				} else if (ge instanceof ParedeRachada) {
+					// TODO: meter na classe Empilhadora
 					if (bobcat.hasHammer()) {
 						gui.removeImage(ge);
 						gameElementsList.remove(ge);
@@ -255,21 +232,16 @@ public class GameEngine implements Observer {
 	// funcao que verifica se um caixote ou uma palete pode mover
 	private boolean collidableCollisionChecker (GameElement ge) {
 		for (GameElement next_ge : gameElementsList){
-			if (next_ge instanceof Caixote || next_ge instanceof Palete 
-			|| next_ge instanceof ParedeRachada || next_ge instanceof Parede ) {
-				if (ge.getPosition().plus(Direction.directionFor(gui.keyPressed()).asVector()).equals(next_ge.getPosition())) {
+			if (ge.getPosition().plus(Direction.directionFor(gui.keyPressed()).asVector()).equals(next_ge.getPosition())) {
+				if (next_ge instanceof Caixote || next_ge instanceof Palete || next_ge instanceof ParedeRachada || next_ge instanceof Parede ) {
 					return false;
-				}
-			} else if (next_ge instanceof Buraco && ge instanceof Caixote) {
-				if (ge.getPosition().plus(Direction.directionFor(gui.keyPressed()).asVector()).equals(next_ge.getPosition())) {
-					gui.removeImage(ge);
-					gameElementsList.remove(ge);
+				} else if (next_ge instanceof Buraco && ge instanceof Caixote) {
+					bobcat.move(gui.keyPressed());
+					bobcat.driveTo(Direction.directionFor(gui.keyPressed()));
+					((Buraco)next_ge).interactWith((Caixote)ge);
 					return true;
-				}
-			} else if (next_ge instanceof Buraco && ge instanceof Palete) {
-				if (ge.getPosition().plus(Direction.directionFor(gui.keyPressed()).asVector()).equals(next_ge.getPosition())) {
-					gameElementsList.remove(next_ge);
-					gameElementsList.remove(ge);
+				} else if (next_ge instanceof Buraco && ge instanceof Palete) {
+					((Buraco)next_ge).interactWith((Palete)ge);
 					return true;
 				}
 			}
@@ -292,7 +264,6 @@ public class GameEngine implements Observer {
 		return false;
 	}
 
-	//Funcao que verifica se existe algo acima de um ponto [usado: para verificar se existe um alvo debaixo de um caixote]
 	public boolean isSomethingAbove(Point2D point , String name){
 		for (GameElement ge : gameElementsList) {
 			if (ge.getPosition().equals(point) && ge.getName().equals(name)) {
@@ -301,9 +272,7 @@ public class GameEngine implements Observer {
 		}
 		return false;
 	}
-	// Envio das mensagens para a GUI - note que isto so' precisa de ser feito no
-	// inicio
-	// Nao e' suposto re-enviar os objetos se a unica coisa que muda sao as posicoes
+
 	private void sendImagesToGUI() {
 
 		gui.addImage(bobcat);
@@ -311,6 +280,6 @@ public class GameEngine implements Observer {
 		for (GameElement ge : gameElementsList) {
 			gui.addImage(ge);
 		}
-
 	}
+
 }

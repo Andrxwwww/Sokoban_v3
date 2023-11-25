@@ -23,9 +23,4 @@ public class ParedeRachada extends GameElement {
         return position;
     }
 
-    @Override
-    public boolean isFloor() {
-		return false;
-	}
-
 }

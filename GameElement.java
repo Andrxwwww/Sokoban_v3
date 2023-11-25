@@ -24,7 +24,7 @@ public abstract class GameElement implements ImageTile {
             case 'C':
                 return new Caixote(position);
             case 'P':
-                return new Palete(position,false);
+                return new Palete(position);
             case 'E':
                 return new Empilhadora(position);
             case 'T':
@@ -44,8 +44,6 @@ public abstract class GameElement implements ImageTile {
                 throw new IllegalArgumentException("Invalid element name: " + c + "the element doesnt exist :(");
         }
     }
-
-    public abstract boolean isFloor();
 
     public Point2D getPosition() {
         return position;

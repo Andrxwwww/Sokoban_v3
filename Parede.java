@@ -17,9 +17,4 @@ public class Parede extends GameElement {
         return 3;
     }
 
-    @Override
-    public boolean isFloor() {
-		return false;
-	}
-
 }
