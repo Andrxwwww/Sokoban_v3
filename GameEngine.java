@@ -24,12 +24,11 @@ public class GameEngine implements Observer {
 	private ImageMatrixGUI gui; // Referencia para ImageMatrixGUI (janela de interface com o utilizador)
 	private List<GameElement> gameElementsList; // Lista de GameElements
 	private Empilhadora bobcat; // Referencia para a empilhadora
-	private int level_num; // Numero do nivel a carregar
+	public int level_num; // Numero do nivel a carregar
 	public int numberOfTargetsWithBoxes; // Numero de alvos com caixas
 	public int numberOfTargets; // Numero de alvos
 	private int moves; // Numero de movimentos da empilhadora
-
-	public final int FIRST_LEVEL = 5;
+	private String PlayerName; // Nome do jogador
 
 	private GameEngine() {
 		gameElementsList = new ArrayList<>();
@@ -56,10 +55,11 @@ public class GameEngine implements Observer {
 		gui.registerObserver(this); // 3. registar o objeto ativo GameEngine como observador da GUI
 		gui.go(); // 4. lancar a GUI
 
-		this.level_num = FIRST_LEVEL;
 		this.numberOfTargetsWithBoxes = 0;
 		this.numberOfTargets = 0;
 		this.moves = 0;
+		this.level_num = 6; // comeca no nivel 1
+		inputPlayerName();
 
 		createLevel(level_num); // criar o armazem
 		sendImagesToGUI(); // enviar as imagens para a GUI
@@ -79,24 +79,23 @@ public class GameEngine implements Observer {
 		}
 	}
 
-	public GameElement getGameElementAtPosition(Point2D position) {
-		for (GameElement gameElement : gameElementsList) {
-			if (gameElement.getPosition().equals(position)) {
-				return gameElement;
-			}
-		}
-		return null;
-	}
-
 	// --- FUNCTIONS FOR KEYS ---
 	public void otherKeyInteractions(int key) {
 		if (key == KeyEvent.VK_SPACE) {
-			restartGame(FIRST_LEVEL);
+			restartGame(level_num);
 		}
 	}
 
 	public void infoBox(String infoMessage, String titleBar) {
 		JOptionPane.showMessageDialog(null, infoMessage, titleBar, javax.swing.JOptionPane.INFORMATION_MESSAGE);
+	}
+
+	public void inputPlayerName() {
+		this.PlayerName = JOptionPane.showInputDialog("Insert your player name:");
+		if (this.PlayerName == null) {
+			infoBox("You have to insert a name ,try ggain", "Error");
+			GameEngine.getInstance().start();
+		}
 	}
 
 	private void levelIncrementer() {
@@ -128,7 +127,6 @@ public class GameEngine implements Observer {
 
 	// funcao que cria o nivel
 	private void createLevel(int level_num) {
-		
 		try {
 			Scanner scanner = new Scanner(new File("levels\\level" + level_num + ".txt"));
 			while (scanner.hasNextLine()) {
@@ -172,14 +170,13 @@ public class GameEngine implements Observer {
 		if (bobcatCollisionsChecker()) {
 			bobcat.move(key);
 			bobcat.driveTo(Direction.directionFor(key));
-			bobcat.pickUpBattery();
-			bobcat.pickUpHammer();
 			moves++;
-			gui.setStatusMessage("Sokoban" + " - Level " + level_num + " - " + "Battery: " + bobcat.getBattery() + " - " + "Moves: " + moves);
+			gui.setStatusMessage(" SOKOBAN " + " | Player: " + PlayerName + " | Level: " + level_num + " | Battery: " + bobcat.getBattery() + " | Moves: " + moves);
 			//System.out.println(bobcat.getBattery()); // debug para ver a bateria se estácorreta
 			System.out.println( "Numero total de Targets: " + numberOfTargets); // debug para ver o numero de alvos
 			System.out.println( "Numero de Caixotes nos alvos: " + numberOfTargetsWithBoxes); // debug para ver o numero de alvos com caixotes
 		}
+		bobcat.move(key);
 	}
 
 	/* funcao que checka se a empilhadora pode passar ou nao 
@@ -189,38 +186,28 @@ public class GameEngine implements Observer {
 		for (GameElement ge : gameElementsList) {
 			if (bobcat.nextPosition(gui.keyPressed()).equals(ge.getPosition())) {
 				if (ge instanceof Caixote || ge instanceof Palete) {
-					// verifica se o caixote ou a palete podem mover
 					if (collidableCollisionChecker(ge)) {
-						// verifica se esse caixote está num alvo
-
-						// TODO: meter na classe Caixote ou palete	
 						if (isMovableOnTarget("Alvo", "Caixote")){
 							numberOfTargetsWithBoxes++;
 						} else if (numberOfTargetsWithBoxes > 0 && numberOfTargetsWithBoxes <= numberOfTargets 
 							&& isSomethingAbove(ge.getPosition(), "Alvo")){ // se o caixote sair do alvo
 							numberOfTargetsWithBoxes--;
 						}
-						
-						ge.setPosition(ge.getPosition().plus(Direction.directionFor(gui.keyPressed()).asVector()));
-						bobcat.addBattery(-1);
+						bobcat.interactWith(ge);
 						return true;
 					} else {
 						return false; // se o caixote ou a palete nao mover entao , a empilhadora nao se move tambem
 					}
-				} else if (ge instanceof Buraco){                   
+				} else if (ge instanceof Buraco){
 					((Buraco)ge).interactWith(bobcat);
-					return false;
-
+					return true;
 				} else if (ge instanceof ParedeRachada) {
-					// TODO: meter na classe Empilhadora
-					if (bobcat.hasHammer()) {
-						gui.removeImage(ge);
-						gameElementsList.remove(ge);
-						return true;
-					} else {
-						return false;
-					}         
-
+					((ParedeRachada)ge).interactWith(bobcat);
+					return false;
+				} else if (ge instanceof Teleporte) {
+					//TODO: Teleporte
+					/*((Teleporte)ge).interactWith(bobcat);
+					return true;*/
 				} else if (ge instanceof Parede) {
 					return false;
 				}
@@ -249,7 +236,7 @@ public class GameEngine implements Observer {
 		return true;
 	}
 
-	// funcao que verifica se um caixote ou uma palete está em cima de um alvo
+	// funcao que verifica se um caixote está em cima de um alvo
 	public boolean isMovableOnTarget(String target, String movable) {
 		for (GameElement ge1 : gameElementsList) {
 			if (ge1.getName().equals(target)) {
@@ -264,6 +251,7 @@ public class GameEngine implements Observer {
 		return false;
 	}
 
+	// funcao que verifica se um ponto tem algum gameElement em cima 
 	public boolean isSomethingAbove(Point2D point , String name){
 		for (GameElement ge : gameElementsList) {
 			if (ge.getPosition().equals(point) && ge.getName().equals(name)) {

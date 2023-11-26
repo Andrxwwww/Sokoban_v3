@@ -1,7 +1,7 @@
 package pt.iscte.poo.sokobanstarter;
 import pt.iscte.poo.utils.Point2D;
 
-public class ParedeRachada extends GameElement {
+public class ParedeRachada extends GameElement implements Interaction  {
 
 	private Point2D position;
 	
@@ -21,6 +21,14 @@ public class ParedeRachada extends GameElement {
 
     public Point2D nextPosition(int key) {
         return position;
+    }
+
+    public void interactWith(GameElement ge) {
+        if (ge instanceof Empilhadora && ((Empilhadora) ge).hasHammer()) {
+            GameEngine.getInstance().getGameElementsList().remove(this);
+            GameEngine.getInstance().getGui().removeImage(this);
+            ge.setPosition(this.getPosition());
+        }
     }
 
 }

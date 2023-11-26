@@ -3,6 +3,8 @@ import pt.iscte.poo.utils.Point2D;
 
 public class Buraco extends GameElement implements Interaction {
 
+    GameEngine gameEngine = GameEngine.getInstance();
+
     public Buraco(Point2D position) {
         super(position);
     }
@@ -20,18 +22,18 @@ public class Buraco extends GameElement implements Interaction {
     @Override
     public void interactWith(GameElement ge) {
         if (ge instanceof Palete) {
-            GameEngine.getInstance().getGameElementsList().remove(ge);
-            GameEngine.getInstance().getGameElementsList().remove(this);
+            gameEngine.getGameElementsList().remove(ge);
+            gameEngine.getGameElementsList().remove(this);
         } else if ( ge instanceof Caixote) {
-            GameEngine.getInstance().getGameElementsList().remove(ge);
-            GameEngine.getInstance().getGui().removeImage(ge);
-            GameEngine.getInstance().infoBox("Press SPACE for restart", "The number of boxes on inferior than the targets :(");
-            GameEngine.getInstance().restartGame(GameEngine.getInstance().FIRST_LEVEL);
+            gameEngine.getGameElementsList().remove(ge);
+            gameEngine.getGui().removeImage(ge);
+            gameEngine.infoBox("Press SPACE for restart", "The number of boxes on inferior than the targets :(");
+            gameEngine.restartGame(gameEngine.level_num);
         } else if ( ge instanceof Empilhadora) {
-            GameEngine.getInstance().getGameElementsList().remove(ge);
-            GameEngine.getInstance().getGui().removeImage(ge);
-            GameEngine.getInstance().infoBox("Press SPACE for restart", "You Lost :(");
-            GameEngine.getInstance().restartGame(GameEngine.getInstance().FIRST_LEVEL);
+            gameEngine.getGameElementsList().remove(ge);
+            gameEngine.getGui().removeImage(ge);
+            gameEngine.infoBox("Press SPACE for restart", "You Lost :(");
+            gameEngine.restartGame(gameEngine.level_num);
         }
     }
 
