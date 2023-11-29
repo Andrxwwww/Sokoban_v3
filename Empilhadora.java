@@ -5,7 +5,7 @@ import java.util.Iterator;
 import pt.iscte.poo.utils.Direction;
 import pt.iscte.poo.utils.Point2D;
 
-public class Empilhadora extends GameElement{
+public class Empilhadora extends Movable{
 
 	private String imageName;
 	private int Battery;
@@ -88,22 +88,14 @@ public class Empilhadora extends GameElement{
 		if (PosChecker(newPosition)){
 			setPosition(newPosition);
 			Battery--;
+			gameEngine.moves++;
 			if( Battery == 0 ) {
 				gameEngine.infoBox("Click SPACE for restart ", "You ran out of battery :(");
-				gameEngine.restartGame(gameEngine.level_num);
+				gameEngine.restartGame();
 			}
 		}
 	}
 
-	public void interactWith(GameElement ge) {
-		if (ge instanceof Caixote || ge instanceof Palete) {
-			Point2D newPosition = ge.getPosition().plus(Direction.directionFor(gameEngine.getGui().keyPressed()).asVector());
-			if (PosChecker(newPosition)) {
-				ge.setPosition(newPosition);
-				Battery--;
-			}
-		}
-	}
 
 	public void pickUpBattery() {
 		Iterator<GameElement> iterator = gameEngine.getGameElementsList().iterator();

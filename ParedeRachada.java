@@ -27,7 +27,6 @@ public class ParedeRachada extends GameElement implements Interaction  {
         if (ge instanceof Empilhadora && ((Empilhadora) ge).hasHammer()) {
             GameEngine.getInstance().getGameElementsList().remove(this);
             GameEngine.getInstance().getGui().removeImage(this);
-            ge.setPosition(this.getPosition());
         }
     }
 

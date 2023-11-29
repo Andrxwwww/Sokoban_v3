@@ -18,26 +18,13 @@ public class Teleporte extends GameElement implements Interaction{
     }
 
     @Override
+    //TODO: quando a empilhadora passa ou um Movable ,tentar evitar que ela vá para dentro da parede
     public void interactWith(GameElement ge) {
         for (GameElement ge2 : GameEngine.getInstance().getGameElementsList()) {
-            if (ge instanceof Empilhadora && ge2 instanceof Teleporte) {
-                if (hasOnTop(ge)) {
-                    break;
-                }
+            if (ge instanceof Movable && ge2 instanceof Teleporte && !ge2.getPosition().equals(this.getPosition())) {
+                ge.setPosition(ge2.previousPosition());
             }
-            if (ge2 instanceof Teleporte && !ge2.getPosition().equals(this.getPosition()) && !hasOnTop(ge2)) {
-                ge.setPosition(ge2.getPosition());
-            }
-        }
-    }
-
-    private boolean hasOnTop(GameElement ge) {
-        for (GameElement ge2 : GameEngine.getInstance().getGameElementsList()) {
-            if ((ge2 instanceof Palete || ge2 instanceof Caixote) && ge2.getPosition().equals(ge.getPosition())) { 
-                return true;
-            }
-        }
-        return false;
+        } 
     }
 
 }

@@ -23,12 +23,15 @@ public class GameEngine implements Observer {
 	private static GameEngine INSTANCE; // Referencia para o unico objeto GameEngine (singleton)
 	private ImageMatrixGUI gui; // Referencia para ImageMatrixGUI (janela de interface com o utilizador)
 	private List<GameElement> gameElementsList; // Lista de GameElements
-	private Empilhadora bobcat; // Referencia para a empilhadora
-	public int level_num; // Numero do nivel a carregar
+	public Empilhadora bobcat; // Referencia para a empilhadora
+	public int level_num; // Numero do nivel
 	public int numberOfTargetsWithBoxes; // Numero de alvos com caixas
 	public int numberOfTargets; // Numero de alvos
-	private int moves; // Numero de movimentos da empilhadora
-	private String PlayerName; // Nome do jogador
+	public int score; // Pontuacao
+	public int moves; // Numero de movimentos da empilhadora
+	public String playerName; // Nome do jogador
+
+	public final int FIRST_LEVEL = 5;
 
 	private GameEngine() {
 		gameElementsList = new ArrayList<>();
@@ -40,7 +43,8 @@ public class GameEngine implements Observer {
 		return INSTANCE;
 	}
 
-	public ImageMatrixGUI getGui() {
+	//--GETTERS--
+	public ImageMatrixGUI getGui() { 
 		return this.gui;
 	}
 	
@@ -48,6 +52,7 @@ public class GameEngine implements Observer {
 		return this.gameElementsList;
 	}
 
+	// funcao que inicia o jogo
 	public void start() {
 
 		gui = ImageMatrixGUI.getInstance(); // 1. obter instancia ativa de ImageMatrixGUI
@@ -58,9 +63,11 @@ public class GameEngine implements Observer {
 		this.numberOfTargetsWithBoxes = 0;
 		this.numberOfTargets = 0;
 		this.moves = 0;
-		this.level_num = 6; // comeca no nivel 1
+		this.level_num = FIRST_LEVEL; // comeca no nivel 1
+		this.score = 0;
 		inputPlayerName();
 
+		Score.createHighScoreFile(); // criar o ficheiro de scores
 		createLevel(level_num); // criar o armazem
 		sendImagesToGUI(); // enviar as imagens para a GUI
 	}
@@ -71,18 +78,19 @@ public class GameEngine implements Observer {
 
 		otherKeyInteractions(key); 
 		gui.update();
-		if (bobcat != null && Direction.isDirection(key)) {
+		if (bobcat != null && Direction.isDirection(key)) { // se a empilhadora nao for null e a tecla pressionada for uma direcao(setinhas)
 			bobcatKeyMechanics(key);
+			//no caso de a empilhadora passar por cima de um martelo ou uma bateria ele da "pickUp"
 			bobcat.pickUpBattery();
 			bobcat.pickUpHammer();
-			levelIncrementer();
+
+			winGame();
 		}
 	}
 
-	// --- FUNCTIONS FOR KEYS ---
 	public void otherKeyInteractions(int key) {
 		if (key == KeyEvent.VK_SPACE) {
-			restartGame(level_num);
+			restartGame();
 		}
 	}
 
@@ -91,27 +99,29 @@ public class GameEngine implements Observer {
 	}
 
 	public void inputPlayerName() {
-		this.PlayerName = JOptionPane.showInputDialog("Insert your player name:");
-		if (this.PlayerName == null) {
-			infoBox("You have to insert a name ,try ggain", "Error");
+		this.playerName = JOptionPane.showInputDialog("Insert your player name:");
+		if (this.playerName == null) {
+			infoBox("You have to insert a name ,try again", "Error");
 			GameEngine.getInstance().start();
 		}
 	}
 
-	private void levelIncrementer() {
+	private void winGame() {
 		if (numberOfTargetsWithBoxes == numberOfTargets) {
+			this.score += 100000 / ((moves) + (bobcat.getBattery()));
 			this.level_num++;
 			if (this.level_num > 6) {
 				infoBox("press SPACE for restart or ENTER for exit", "You Won the Game :D !!");
+				Score.writePlayerScoreInFile(this.level_num, this.playerName, score );
 				System.exit(0);
 			} else {
 				infoBox("press ENTER for next level", "Congrats!!");
 			}
-			restartGame(this.level_num++);
+			restartGame();
 		}
 	}
 
-	public void restartGame(int level_num) {
+	public void restartGame() {
 		bobcat.setHammer(false);
 
 		gui.clearImages(); // apaga todas as imagens atuais da GUI
@@ -119,9 +129,8 @@ public class GameEngine implements Observer {
 		numberOfTargetsWithBoxes = 0;
 		numberOfTargets = 0	;
 		moves = 0;
-		this.level_num = level_num; // reecria o primeiro nivel
 
-		createLevel(level_num);
+		createLevel(this.level_num);
 		sendImagesToGUI();
 	}
 
@@ -145,8 +154,7 @@ public class GameEngine implements Observer {
 		gui.update();
 	}
 
-	// funcao que dado um gameElement ele vai adicionar a lista correspondente
-	// (tinha-se de fazer com gameElements é o porquê de ter feito asssim)
+	// funcao que dado um gameElement ele vai adicionar a lista
 	private void addGameElementToGUI(GameElement gameElement) {
 		if (gameElement instanceof Caixote || gameElement instanceof Palete 
 		|| gameElement instanceof ParedeRachada || gameElement instanceof Bateria 
@@ -163,77 +171,62 @@ public class GameEngine implements Observer {
 		} else {
 			gameElementsList.add(gameElement);
 		}
-	} 
+	}
 
 	private void bobcatKeyMechanics(int key) {
 
-		if (bobcatCollisionsChecker()) {
+		if (collisionChecker(bobcat)) {
 			bobcat.move(key);
 			bobcat.driveTo(Direction.directionFor(key));
 			moves++;
-			gui.setStatusMessage(" SOKOBAN " + " | Player: " + PlayerName + " | Level: " + level_num + " | Battery: " + bobcat.getBattery() + " | Moves: " + moves);
-			//System.out.println(bobcat.getBattery()); // debug para ver a bateria se estácorreta
+			gui.setStatusMessage(" SOKOBAN " + " | Player: " + playerName + " | Level: " + level_num + " | Battery: " + bobcat.getBattery() + " | Moves: " + moves + " | Score: " + score);
 			System.out.println( "Numero total de Targets: " + numberOfTargets); // debug para ver o numero de alvos
 			System.out.println( "Numero de Caixotes nos alvos: " + numberOfTargetsWithBoxes); // debug para ver o numero de alvos com caixotes
 		}
 		bobcat.move(key);
 	}
 
-	/* funcao que checka se a empilhadora pode passar ou nao 
-	[ se for um caixote ou uma palete entao move o caixote ou a palete + a empilhadora 
-	, se for parede ou paredeRachada entao nao passa ] */
-	private boolean bobcatCollisionsChecker() {
+	public GameElement getGameElementAtPosition(Point2D position) {
+		for (GameElement gameElement : gameElementsList) {
+			if (gameElement.getPosition().equals(position)) {
+				return gameElement;
+			}
+		}
+		return null;
+	}
+
+	public boolean collisionChecker(GameElement gE) {
 		for (GameElement ge : gameElementsList) {
-			if (bobcat.nextPosition(gui.keyPressed()).equals(ge.getPosition())) {
-				if (ge instanceof Caixote || ge instanceof Palete) {
-					if (collidableCollisionChecker(ge)) {
-						if (isMovableOnTarget("Alvo", "Caixote")){
-							numberOfTargetsWithBoxes++;
-						} else if (numberOfTargetsWithBoxes > 0 && numberOfTargetsWithBoxes <= numberOfTargets 
-							&& isSomethingAbove(ge.getPosition(), "Alvo")){ // se o caixote sair do alvo
-							numberOfTargetsWithBoxes--;
-						}
-						bobcat.interactWith(ge);
-						return true;
-					} else {
-						return false; // se o caixote ou a palete nao mover entao , a empilhadora nao se move tambem
+			if (!gE.nextPosition(gui.keyPressed()).equals(ge.getPosition())) continue;
+			if (ge instanceof Movable) {
+				Point2D np = ge.getPosition().plus(Direction.directionFor(gui.keyPressed()).asVector());
+				for (GameElement next_ge : gameElementsList){
+					if (!np.equals(next_ge.getPosition())) continue;
+					if (next_ge instanceof Movable || next_ge instanceof Parede || next_ge instanceof ParedeRachada) {
+						return false;
 					}
-				} else if (ge instanceof Buraco){
-					((Buraco)ge).interactWith(bobcat);
+					((Interaction)next_ge).interactWith(ge);
+					targetChecker(ge.getPosition());
+					((Movable)ge).interactWith(gE);
 					return true;
-				} else if (ge instanceof ParedeRachada) {
-					((ParedeRachada)ge).interactWith(bobcat);
-					return false;
-				} else if (ge instanceof Teleporte) {
-					//TODO: Teleporte
-					/*((Teleporte)ge).interactWith(bobcat);
-					return true;*/
-				} else if (ge instanceof Parede) {
-					return false;
 				}
+			} else if (ge instanceof Buraco || ge instanceof ParedeRachada || ge instanceof Teleporte) {
+				((Interaction)ge).interactWith(bobcat);
+				return true;
+			} else if (ge instanceof Parede) {
+				return false;
 			}
 		}
 		return true;
 	}
 
-	// funcao que verifica se um caixote ou uma palete pode mover
-	private boolean collidableCollisionChecker (GameElement ge) {
-		for (GameElement next_ge : gameElementsList){
-			if (ge.getPosition().plus(Direction.directionFor(gui.keyPressed()).asVector()).equals(next_ge.getPosition())) {
-				if (next_ge instanceof Caixote || next_ge instanceof Palete || next_ge instanceof ParedeRachada || next_ge instanceof Parede ) {
-					return false;
-				} else if (next_ge instanceof Buraco && ge instanceof Caixote) {
-					bobcat.move(gui.keyPressed());
-					bobcat.driveTo(Direction.directionFor(gui.keyPressed()));
-					((Buraco)next_ge).interactWith((Caixote)ge);
-					return true;
-				} else if (next_ge instanceof Buraco && ge instanceof Palete) {
-					((Buraco)next_ge).interactWith((Palete)ge);
-					return true;
-				}
-			}
+	public void targetChecker(Point2D position){
+		if (isMovableOnTarget("Alvo", "Caixote")){ // se o caixote estiver em cima de um alvo
+			numberOfTargetsWithBoxes++;
+		} else if (numberOfTargetsWithBoxes > 0 && numberOfTargetsWithBoxes <= numberOfTargets 
+			&& isSomethingAbove(position, "Alvo")){ // se o alvo nao tiver um caixote em cima
+			numberOfTargetsWithBoxes--;
 		}
-		return true;
 	}
 
 	// funcao que verifica se um caixote está em cima de um alvo
@@ -241,7 +234,7 @@ public class GameEngine implements Observer {
 		for (GameElement ge1 : gameElementsList) {
 			if (ge1.getName().equals(target)) {
 				for (GameElement ge2 : gameElementsList) {
-					if (ge2.getName().equals(movable) && ge1.getPosition().equals(ge2.nextPosition(gui.keyPressed())) 
+					if (ge2.getName().equals(movable) && ge2 instanceof Caixote && ge1.getPosition().equals(((Caixote)ge2).nextPosition(gui.keyPressed())) 
 					&& bobcat.nextPosition(gui.keyPressed()).equals(ge2.getPosition())) {
 						return true;
 					}
@@ -262,9 +255,7 @@ public class GameEngine implements Observer {
 	}
 
 	private void sendImagesToGUI() {
-
 		gui.addImage(bobcat);
-
 		for (GameElement ge : gameElementsList) {
 			gui.addImage(ge);
 		}

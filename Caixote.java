@@ -2,7 +2,7 @@ package pt.iscte.poo.sokobanstarter;
 
 import pt.iscte.poo.utils.Point2D;
 
-public class Caixote extends GameElement {
+public class Caixote extends Movable{
 	
 	public Caixote(Point2D position){
         super(position);
@@ -17,4 +17,5 @@ public class Caixote extends GameElement {
 	public int getLayer() {
 		return 3;
 	}
+
 }

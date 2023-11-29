@@ -53,16 +53,16 @@ public abstract class GameElement implements ImageTile {
         this.position = position;
     }
 
-    public void movePosition(Direction direction) {
-		Point2D newPosition = position.plus(direction.asVector());
-		if (newPosition.getX()>=0 && newPosition.getX()<10 && newPosition.getY()>=0 && newPosition.getY()<10 ){
-			this.position = newPosition;
-		}
+    public Point2D previousPosition() {
+        Point2D d = this.getPosition().plus((Direction.directionFor(GameEngine.getInstance().getGui().keyPressed())).opposite().asVector());
+        return d;
+    }
+
+     public Point2D nextPosition(int key) {
+		Direction direction = Direction.directionFor(key);
+		return this.getPosition().plus(direction.asVector());
 	}
 
-    public Point2D nextPosition(int key) {
-		Direction direction = Direction.directionFor(key);
-		return position.plus(direction.asVector());
-	}
+
     
 }
